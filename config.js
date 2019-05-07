@@ -12,6 +12,7 @@ module.exports = {
   ignoreProtocol: true,
   // 文件名过滤规则
   filter: fileName => {
-    return fileName.replace(/(http|https):\/\/|\/|\?/g, '-');
+    // return fileName.replace(/(http|https):\/\/|\/|\?/g, '-');
+    return encodeURIComponent(fileName);
   }
 };
