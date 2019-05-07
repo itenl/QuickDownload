@@ -5,4 +5,4 @@ Quickly download images from the remote
 
 
 `禁止商业用途 ❤ 研究学习范畴 ❤ 作者保留解释权`
-`Commercial use is forbidden and The author reserves the right of interpretion`
+Commercial use is forbidden and The author reserves the right of interpretion
