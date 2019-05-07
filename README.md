@@ -1,6 +1,6 @@
 # QuickDownload
 
-`通过 URL 抓取内容(HTML/API-JSON)快速自定义资源服务`
+`通过 URL 抓取内容(HTML/API-JSON)快速下载自定义的资源`
 Quickly download images from the remote
 
 
