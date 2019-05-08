@@ -5,8 +5,8 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node index.js",
-    "debug": "node --debug-brk --inspect index.js"
+    "start": "node src/index.js",
+    "debug": "node --debug-brk --inspect ./src/index.js"
   },
   "engines": {
     "node": ">=8.11.0"

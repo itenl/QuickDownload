@@ -1,19 +1,18 @@
 module.exports = {
   src: [
     {
-      // 其它对象需要按此格式进行配置
+      // 其它节点需按此格式进行配置
       // 检索的远程端地址
       url: '',
       // 是否启用(非必须)
       enable: !true,
-      // 深度爬取级别(非必须)
-      depth: 3
+      // 深度爬取级别(非必须，不建议超过3级)
+      depth: 1
     },
     {
-      // url: 'https://www.plmm.com.cn/qipao/4125.html',
       url: 'https://www.plmm.com.cn/',
-      enable: true,
-      depth: 3
+      enable: !true,
+      depth: 1
     },
     {
       url:
