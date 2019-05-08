@@ -7,13 +7,17 @@ module.exports = {
     // let reg = /(\/\/)+(\w+\.)+(\w+)[\w\/\.\-]*(jpg|gif|png)/gi;
     return new RegExp(`(${config.ignoreProtocol ? '' : '(http:|https:)?'}\\/\\/)+(\\w+\\.)+(\\w+)[\\w\\/\\.\\-]*(${config.mime.join('|')})`, 'gi');
   })(),
-  website: content => {
+  website: (content, distinct = true) => {
     let addrs = [];
     content.replace(/href=\"([https:|\/\/].*?)"/gi, (source, group, index) => {
       if (group) addrs.push(group);
       return source;
     });
-    debugger;
-    return addrs;
+    return distinct ? Array.from(new Set(addrs)) : addrs;
+  },
+  process_url: (url, protocol = 'https') => {
+    return url.replace(/^\/\/.*?(.*)?/gi, (source, group, index) => {
+      return `${protocol}://${group}`;
+    });
   }
 };
