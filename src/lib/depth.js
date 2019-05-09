@@ -1,8 +1,14 @@
 const regular = require('./regular');
 
-const processAddr = (url, sourceURL) => {
+const processAddr = (url, _protocol) => {
   url = regular.process_url(url);
-  // if (true) { // A标签 存在相对路径的情况需要特殊处理  }
+  if (true) {
+    // A标签 存在相对路径的情况需要特殊处理  '/s02/index.html'
+    url = url.replace(/^\/.*\.html?$/, (a, b, c) => {
+      return `${_protocol[1]}//${_protocol[3]}${a}`;
+    });
+  }
+
   return {
     url: url,
     enable: [
@@ -10,7 +16,7 @@ const processAddr = (url, sourceURL) => {
         return !new RegExp(`.*?\\.(${['ico', 'css', 'js'].join('|')})$`, 'ig').test(url);
       },
       () => {
-        return !!(url.indexOf(sourceURL.replace('www.', '')) > -1);
+        return !!(url.indexOf(_protocol[3].replace('www.', '')) > -1);
       },
       () => {
         return !!regular.url.test(url);
@@ -33,7 +39,7 @@ const startDepth = (content, surplus, dist, _protocol) => {
     console.log(`剩余深度 ${surplus} 已获取到 ${addrs.length} 个横向地址`);
     let items = [];
     addrs.forEach(url => {
-      const item = processAddr(url, _protocol[3]);
+      const item = processAddr(url, _protocol);
       if (item.enable) items.push(item);
     });
     // items = items.slice(0, 100);
