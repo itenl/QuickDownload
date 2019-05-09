@@ -11,6 +11,7 @@ const counter = {
   total: 0,
   complete: 0
 };
+process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
 const depth_domain = {};
 
 const requestCallBack = (resourceURI, index, dist, _protocol) => {
