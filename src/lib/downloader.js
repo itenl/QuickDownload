@@ -95,11 +95,12 @@ const readyDownloadTask = (srcAddrs, dist, _protocol) => {
 };
 
 const matchAddr = (content, _protocol) => {
-  if (!content) return;
+  if (!content) return false;
   _protocol = _protocol || 'https:';
-  return JSON.stringify(content)
-    .match(regular.img)
-    .map((item, index, all) => {
+  try {
+    const addrs = JSON.stringify(content).match(regular.img);
+    if (!addrs) return false;
+    return addrs.map((item, index, all) => {
       const result = regular.url.exec(item);
       if (result && !result[1]) {
         // 匹配到的资源不包含协议需要手动拼接
@@ -107,6 +108,9 @@ const matchAddr = (content, _protocol) => {
       }
       return item;
     });
+  } catch (error) {
+    console.log('[matchAddr]', content, error);
+  }
 };
 
 const mkdirFolder = dist => {
@@ -152,8 +156,10 @@ const start = (srcs, prevDist = '') => {
           if (content) {
             src.depth && depth.startDepth(content, --src.depth, currentDist, url_array);
             const srcAddrs = matchAddr(content, `${_protocol}:`);
-            console.log(`${src.url} 中含有 所需资源 ${srcAddrs.length}`);
-            readyDownloadTask(srcAddrs, currentDist, _protocol);
+            if (srcAddrs) {
+              console.log(`${src.url} 中含有 所需资源 ${srcAddrs.length}`);
+              readyDownloadTask(srcAddrs, currentDist, _protocol);
+            }
           }
         },
         _protocol

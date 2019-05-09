@@ -9,7 +9,8 @@ module.exports = {
   })(),
   website: (content, distinct = true) => {
     let addrs = [];
-    content.replace(/href=\"([https:|\/\/].*?)"/gi, (source, group, index) => {
+    // 获取a标签href地址
+    content.replace(/<a.*?href?\s*=\s*[\'|\"]+?(.*?)[\'|\"]+?/gi, (source, group, index) => {
       if (group) addrs.push(group);
       return source;
     });
