@@ -109,6 +109,30 @@ const matchAddr = (content, _protocol) => {
     });
 };
 
+const mkdirFolder = dist => {
+  try {
+    if (!fs.existsSync(dist)) {
+      let pathtmp;
+      dist.split('/').forEach(dir => {
+        if (pathtmp) {
+          pathtmp = path.join(pathtmp, dir);
+        } else {
+          dir ? (pathtmp = dir) : (pathtmp = '/');
+        }
+        if (!fs.existsSync(pathtmp)) {
+          if (!fs.mkdirSync(pathtmp)) {
+            return false;
+          }
+        }
+      });
+    }
+    return true;
+  } catch (error) {
+    console.log(error);
+    return false;
+  }
+};
+
 const start = (srcs, prevDist = '') => {
   if (!srcs || !srcs instanceof Array) return;
   srcs.forEach(src => {
@@ -119,11 +143,9 @@ const start = (srcs, prevDist = '') => {
     depth_domain[encode_url] = src;
     const currentDist = path.join(prevDist ? prevDist : config.distPath, encode_url);
     src.url = regular.process_url(src.url);
-    fs.mkdir(currentDist, result => {
-      if (result) console.warn(result.code);
+    if (mkdirFolder(currentDist)) {
       const url_array = regular.url.exec(src.url);
-      let _protocol = 'https';
-      if (url_array && ['http', 'https'].indexOf(url_array[2]) > -1) _protocol = url_array[2];
+      const _protocol = url_array && url_array[2] ? url_array[2] : 'https';
       requestRemote(
         src.url,
         content => {
@@ -136,7 +158,9 @@ const start = (srcs, prevDist = '') => {
         },
         _protocol
       );
-    });
+    } else {
+      console.log('目录创建异常，请排查');
+    }
   });
 };
 
