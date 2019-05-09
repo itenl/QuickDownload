@@ -8,6 +8,11 @@ module.exports = {
   autoChildPath: true,
   // 允许下载文件后缀
   mime: ['jpg', 'gif', 'png'],
+  // socks5 Proxy
+  shttp: {
+    socksHost: '127.0.0.1',
+    socksHost: '1086'
+  },
   // 正则匹配内容时忽略 http:或https:协议
   ignoreProtocol: true,
   // 文件名过滤规则
