@@ -13,11 +13,10 @@ module.exports = {
     socksHost: '127.0.0.1',
     socksHost: '1086'
   },
-  // 正则匹配内容时忽略 http:或https:协议
-  ignoreProtocol: true,
+  // 正则匹配内容时忽略 http:或https:协议 已强制忽略
+  // ignoreProtocol: true,
   // 文件名过滤规则
   filter: fileName => {
-    // return fileName.replace(/(http|https):\/\/|\/|\?/g, '-');
     return encodeURIComponent(fileName);
   }
 };
