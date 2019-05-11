@@ -11,14 +11,13 @@ const counter = {
   total: 0,
   complete: 0
 };
-process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
+process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
 const depth_domain = {};
 
 const requestCallBack = (resourceURI, index, dist, _protocol) => {
   const fileName = config.randomName ? `${index}-${path.basename(resourceURI)}` : config.filter(resourceURI);
-  console.log(fileName);
   const callback = function(res) {
-    console.log('request: ' + resourceURI + ' return status: ' + res.statusCode);
+    // console.log('request: ' + resourceURI + ' return status: ' + res.statusCode);
     const contentLength = parseInt(res.headers['content-length']);
     const fileBuff = [];
     res.on('data', function(chunk) {
@@ -26,16 +25,16 @@ const requestCallBack = (resourceURI, index, dist, _protocol) => {
       fileBuff.push(buffer);
     });
     res.on('end', function() {
-      console.log('end downloading ' + resourceURI);
+      // console.log('end downloading ' + resourceURI);
       if (isNaN(contentLength)) {
         console.log(resourceURI + ' content length error');
         return;
       }
       const totalBuff = Buffer.concat(fileBuff);
-      console.log('totalBuff.length = ' + totalBuff.length + ' ' + 'contentLength = ' + contentLength);
+      // console.log('totalBuff.length = ' + totalBuff.length + ' ' + 'contentLength = ' + contentLength);
       if (totalBuff.length < contentLength) {
         console.log(resourceURI + ' download error, try again');
-        downloadTask(resourceURI, index, dist, _protocol);
+        downloadRequirement(resourceURI, index, dist, _protocol);
         return;
       }
       fs.appendFile(dist + '/' + fileName, totalBuff, function(err) {});
@@ -47,13 +46,12 @@ const requestCallBack = (resourceURI, index, dist, _protocol) => {
   return callback;
 };
 
-const downloadTask = (resourceURI, index, dist, _protocol) => {
-  console.log('start downloading ' + resourceURI);
+const downloadRequirement = (resourceURI, index, dist, _protocol) => {
   try {
-    const req = protocol[_protocol || 'https'].request(resourceURI, requestCallBack(resourceURI, index, dist));
+    const req = protocol[_protocol].request(resourceURI, requestCallBack(resourceURI, index, dist, _protocol));
     req.on('error', function(e) {
       console.log('request ' + resourceURI + ' error, try again');
-      downloadTask(resourceURI, index, dist, _protocol);
+      downloadRequirement(resourceURI, index, dist, _protocol);
     });
     req.end();
   } catch (error) {
@@ -79,19 +77,25 @@ const requestRemote = (url, callback, _protocol) => {
         });
       })
       .on('error', function(err) {
-        console.log(err);
+        console.log(err, url);
       });
   } catch (err) {
     console.log(err, url);
   }
 };
 
-const readyDownloadTask = (srcAddrs, dist, _protocol) => {
+const readyDownloadTask = (srcAddrs, dist) => {
   if (!srcAddrs) return;
   counter.total = srcAddrs.length;
   console.log('total ' + counter.total);
   srcAddrs.forEach(function(item, index, array) {
-    downloadTask(item, index, dist, _protocol);
+    if (!item) return;
+    const url_array = regular.url.exec(item);
+    if (!url_array || !url_array[2]) {
+      console.log(`所匹配到资源 ${item} 不符合规范，缺少协议【http 或 https】 readyDownloadTask`);
+      return;
+    }
+    downloadRequirement(item, index, dist, url_array[2]);
   });
 };
 
@@ -99,7 +103,7 @@ const matchAddr = (content, _protocol) => {
   if (!content) return false;
   _protocol = _protocol || 'https:';
   try {
-    const addrs = JSON.stringify(content).match(regular.img);
+    const addrs = JSON.stringify(content).match(regular.userRequirement);
     if (!addrs) return false;
     return addrs.map((item, index, all) => {
       const result = regular.url.exec(item);
@@ -114,6 +118,7 @@ const matchAddr = (content, _protocol) => {
   }
 };
 
+// 创建多级目录
 const mkdirFolder = dist => {
   try {
     if (!fs.existsSync(dist)) {
@@ -138,19 +143,24 @@ const mkdirFolder = dist => {
   }
 };
 
+// 启动/递归深度 结束条件 !depth
 const start = (srcs, prevDist = '') => {
   if (!srcs || !srcs instanceof Array) return;
   srcs.forEach(src => {
     if (!src || !src.url || (src.enable != undefined && !src.enable)) return;
-    let encode_url = encodeURIComponent(src.url);
+    const url_array = regular.url.exec(src.url);
+    if (!url_array || !url_array[2]) {
+      console.log(`所需检索的地址 ${src.url} 不符合规范，缺少协议【http 或 https】`);
+      return;
+    }
+    let encode_url = encodeURIComponent(src.url),
+      _protocol = url_array[2];
     if (depth_domain[encode_url]) return;
     if (encode_url.length > 100) encode_url = encode_url.slice(0, 100);
     depth_domain[encode_url] = src;
-    const currentDist = path.join(prevDist ? prevDist : config.distPath, encode_url);
+    const currentDist = config.autoChildPath ? path.join(prevDist ? prevDist : config.distPath, encode_url) : config.distPath;
     src.url = regular.process_url(src.url);
     if (mkdirFolder(currentDist)) {
-      const url_array = regular.url.exec(src.url);
-      const _protocol = url_array && url_array[2] ? url_array[2] : 'https';
       requestRemote(
         src.url,
         content => {
@@ -159,7 +169,7 @@ const start = (srcs, prevDist = '') => {
             const srcAddrs = matchAddr(content, `${_protocol}:`);
             if (srcAddrs) {
               console.log(`${src.url} 中含有 所需资源 ${srcAddrs.length}`);
-              readyDownloadTask(srcAddrs, currentDist, _protocol);
+              readyDownloadTask(srcAddrs, currentDist);
             }
           }
         },

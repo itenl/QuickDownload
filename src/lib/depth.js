@@ -1,5 +1,6 @@
 const regular = require('./regular');
 
+// 处理所匹配到的地址
 const processAddr = (url, _protocol) => {
   url = regular.process_url(url);
   if (true) {
@@ -13,12 +14,15 @@ const processAddr = (url, _protocol) => {
     url: url,
     enable: [
       () => {
+        // 过滤无意义的后缀资源链接（可修改成用户传入）
         return !new RegExp(`.*?\\.(${['ico', 'css', 'js'].join('|')})$`, 'ig').test(url);
       },
       () => {
+        // 当前地址属于所传入的泛域下
         return !!(url.indexOf(_protocol[3].replace('www.', '')) > -1);
       },
       () => {
+        // 属于合法域名
         return !!regular.url.test(url);
       }
     ].every(func => {
@@ -28,6 +32,7 @@ const processAddr = (url, _protocol) => {
   };
 };
 
+// 匹配子页可访问的链接
 const startDepth = (content, surplus, dist, _protocol) => {
   if (!_protocol || !_protocol[3]) {
     console.log('请提供源站地址，方可进行深度查询(避免内外联的深度广度过于宽泛)');
@@ -42,7 +47,6 @@ const startDepth = (content, surplus, dist, _protocol) => {
       const item = processAddr(url, _protocol);
       if (item.enable) items.push(item);
     });
-    // items = items.slice(0, 100);
     downloader.start(items, dist);
   }
 };
