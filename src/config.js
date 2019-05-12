@@ -6,6 +6,8 @@ module.exports = {
   // 自动子路径
   // depth > 0
   autoChildPath: true,
+  // 是否保存远程响应的内容（HTML/API-JSON等）
+  autoSaveRemoteContent: false,
   // 允许下载文件后缀
   mime: ['jpg', 'gif', 'png'],
   // socks5 Proxy
