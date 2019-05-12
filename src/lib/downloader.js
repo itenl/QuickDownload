@@ -73,7 +73,7 @@ const requestRemote = (url, callback, _protocol) => {
         res.on('end', function() {
           var data = Buffer.concat(chunks, size);
           var html = data.toString();
-          callback && callback(html);
+          callback && callback(html, res);
         });
       })
       .on('error', function(err) {
@@ -99,7 +99,7 @@ const readyDownloadTask = (srcAddrs, dist) => {
   });
 };
 
-const matchAddr = (content, _protocol) => {
+const getRequirementAddr = (content, _protocol) => {
   if (!content) return false;
   _protocol = _protocol || 'https:';
   try {
@@ -114,7 +114,7 @@ const matchAddr = (content, _protocol) => {
       return item;
     });
   } catch (error) {
-    console.log('[matchAddr]', content, error);
+    console.log('[getRequirementAddr]', content, error);
   }
 };
 
@@ -143,6 +143,34 @@ const mkdirFolder = dist => {
   }
 };
 
+const saveRemoteContent = (content, path, res) => {
+  let contentType = res && res.headers['content-type'];
+  if (contentType) {
+    contentType = contentType
+      .toLowerCase()
+      .replace(/.*\//gi, '')
+      .replace(new RegExp(`${['x-javascript', 'plain ', 'x-www-form-urlencoded'].join('|')}`, 'gi'), function(item) {
+        let mime = '';
+        switch (item) {
+          case 'x-javascript':
+            mime = 'js';
+            break;
+          case 'plain':
+            mime = 'txt';
+            break;
+          case 'x-www-form-urlencoded':
+            mime = 'json';
+            break;
+        }
+        return mime;
+      });
+    path = [path, contentType].join('.');
+  }
+  fs.writeFile(path, content, function(err) {
+    if (err) console.log(err);
+  });
+};
+
 // 启动/递归深度 结束条件 !depth
 const start = (srcs, prevDist = '') => {
   if (!srcs || !srcs instanceof Array) return;
@@ -163,10 +191,11 @@ const start = (srcs, prevDist = '') => {
     if (mkdirFolder(currentDist)) {
       requestRemote(
         src.url,
-        content => {
+        (content, res) => {
           if (content) {
+            if (config.autoSaveRemoteContent) saveRemoteContent(content, path.join(currentDist, encode_url), res);
             src.depth && depth.startDepth(content, --src.depth, currentDist, url_array);
-            const srcAddrs = matchAddr(content, `${_protocol}:`);
+            const srcAddrs = getRequirementAddr(content, `${_protocol}:`);
             if (srcAddrs) {
               console.log(`${src.url} 中含有 所需资源 ${srcAddrs.length}`);
               readyDownloadTask(srcAddrs, currentDist);
