@@ -4,7 +4,11 @@ module.exports = {
   userRequirement: (() => {
     console.log(config.mime.join('|'));
     // let reg = /((http:|https:)?\/\/)+(\w+\.)+(\w+)[\w\/\.\-]*(jpg|gif|png)/gi
-    return new RegExp(`(http:\/\/|https:\/\/|\/\/)([\\w.]+\/?)\\S*\\.(${config.mime.join('|')})`, 'gi');
+    // return new RegExp(`(http:\/\/|https:\/\/|\/\/)([\\w.]+\/?)\\S*\\.(${config.mime.join('|')})`, 'gi');
+    // 宽泛模式 不匹配http|https
+    // return new RegExp(`\"([\\w.]+\/?)\\S*\\.(${config.mime.join('|')})`, 'gi');
+    // 需取消贪婪模式
+    return new RegExp(`src=\".+?\.(${['jpg', 'png'].join('|')})`, 'gi');
   })(),
   website: (content, distinct = true) => {
     let addrs = [];
