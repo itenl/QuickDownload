@@ -5,6 +5,7 @@ const protocol = {
   http: require('http'),
   https: require('https')
 };
+const URL = require('url');
 const fs = require('fs');
 const path = require('path');
 const counter = {
@@ -99,18 +100,21 @@ const readyDownloadTask = (srcAddrs, dist) => {
   });
 };
 
-const getRequirementAddr = (content, _protocol) => {
+const getRequirementAddr = (content, url) => {
   if (!content) return false;
-  _protocol = _protocol || 'https:';
   try {
-    const addrs = JSON.stringify(content).match(regular.userRequirement);
+    if (typeof content == 'object') content = JSON.stringify(content);
+    const addrs = content.match(regular.userRequirement);
     if (!addrs) return false;
+    const URI = regular.url.exec(url);
     return addrs.map((item, index, all) => {
-      const result = regular.url.exec(item);
-      if (result && !result[1]) {
-        // 匹配到的资源不包含协议需要手动拼接
-        return `${_protocol}${item}`;
-      }
+      item = item.replace(/src=\"?/gi, (source, group, index) => {
+        return '';
+      });
+      if (item.indexOf('"') == 0) item = item.slice(1);
+      let result = regular.url.exec(item);
+      if (!result) (item = URL.resolve(URI[0], item)), (result = regular.url.exec(item));
+      if (result && !result[1]) item = URL.resolve(URI[0], item);
       return item;
     });
   } catch (error) {
@@ -195,7 +199,7 @@ const start = (srcs, prevDist = '') => {
           if (content) {
             if (config.autoSaveRemoteContent) saveRemoteContent(content, path.join(currentDist, encode_url), res);
             src.depth && depth.startDepth(content, --src.depth, currentDist, url_array);
-            const srcAddrs = getRequirementAddr(content, `${_protocol}:`);
+            const srcAddrs = getRequirementAddr(content, src.url);
             if (srcAddrs) {
               console.log(`${src.url} 中含有 所需资源 ${srcAddrs.length}`);
               readyDownloadTask(srcAddrs, currentDist);
