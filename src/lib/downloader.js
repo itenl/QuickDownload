@@ -15,33 +15,59 @@ const counter = {
 process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
 const depth_domain = {};
 
+const getURI = url => {
+  const urlObj = URL.parse(url);
+  if (config.proxy && config.proxy.enable) {
+    return {
+      path: url,
+      hostname: config.proxy.hostname,
+      port: config.proxy.port,
+      headers: {
+        Referer: urlObj.href,
+        'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 11_0 like Mac OS X) AppleWebKit/604.1.38 (KHTML, like Gecko) Version/11.0 Mobile/15A372 Safari/604.1'
+      }
+    };
+  } else {
+    return url;
+  }
+};
+
 const requestCallBack = (resourceURI, index, dist, _protocol) => {
   const fileName = config.randomName ? `${index}-${path.basename(resourceURI)}` : config.filter(resourceURI);
   const callback = function(res) {
     // console.log('request: ' + resourceURI + ' return status: ' + res.statusCode);
-    const contentLength = parseInt(res.headers['content-length']);
-    const fileBuff = [];
-    res.on('data', function(chunk) {
-      const buffer = new Buffer(chunk);
-      fileBuff.push(buffer);
-    });
-    res.on('end', function() {
-      // console.log('end downloading ' + resourceURI);
-      if (isNaN(contentLength)) {
-        console.log(resourceURI + ' content length error');
-        return;
-      }
-      const totalBuff = Buffer.concat(fileBuff);
-      // console.log('totalBuff.length = ' + totalBuff.length + ' ' + 'contentLength = ' + contentLength);
-      if (totalBuff.length < contentLength) {
-        console.log(resourceURI + ' download error, try again');
-        downloadRequirement(resourceURI, index, dist, _protocol);
-        return;
-      }
-      fs.appendFile(dist + '/' + fileName, totalBuff, function(err) {});
-      counter.complete++;
-      console.log('total ' + counter.total + ' complete ' + counter.complete);
-    });
+    if (res.statusCode == 302 || res.statusCode == 301) {
+      const location = URL.resolve(resourceURI, res.headers['location']);
+      // downloadRequirement(location, index, dist, _protocol);
+      console.error('302 fail, maybe need config headers');
+    } else {
+      // 返回 response
+      const contentLength = parseInt(res.headers['content-length']);
+      const fileBuff = [];
+      res.on('data', function(chunk) {
+        const buffer = new Buffer(chunk);
+        fileBuff.push(buffer);
+      });
+      res.on('end', function() {
+        // console.log('end downloading ' + resourceURI);
+        if (isNaN(contentLength)) {
+          console.log(resourceURI + ' content length error');
+          return;
+        }
+        const totalBuff = Buffer.concat(fileBuff);
+        // console.log('totalBuff.length = ' + totalBuff.length + ' ' + 'contentLength = ' + contentLength);
+        if (totalBuff.length < contentLength) {
+          console.log(resourceURI + ' download error, try again');
+          downloadRequirement(resourceURI, index, dist, _protocol);
+          return;
+        }
+        fs.appendFile(dist + '/' + fileName, totalBuff, function(err) {
+          if (err) console.error(err);
+        });
+        counter.complete++;
+        console.log('total ' + counter.total + ' complete ' + counter.complete);
+      });
+    }
   };
 
   return callback;
@@ -49,7 +75,7 @@ const requestCallBack = (resourceURI, index, dist, _protocol) => {
 
 const downloadRequirement = (resourceURI, index, dist, _protocol) => {
   try {
-    const req = protocol[_protocol].request(resourceURI, requestCallBack(resourceURI, index, dist, _protocol));
+    const req = protocol[_protocol].request(getURI(resourceURI), requestCallBack(resourceURI, index, dist, _protocol));
     req.on('error', function(e) {
       console.log('request ' + resourceURI + ' error, try again');
       downloadRequirement(resourceURI, index, dist, _protocol);
@@ -64,7 +90,7 @@ const downloadRequirement = (resourceURI, index, dist, _protocol) => {
 const requestRemote = (url, callback, _protocol) => {
   try {
     protocol[_protocol]
-      .get(url, function(res) {
+      .get(getURI(url), function(res) {
         var chunks = [];
         var size = 0;
         res.on('data', function(chunk) {
